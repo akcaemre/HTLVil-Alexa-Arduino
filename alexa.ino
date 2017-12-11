@@ -5,10 +5,10 @@ byte dimmbrightness = 80;
 boolean blink = false;
 
 // LEDpins from left to right; RGBpins Red Green Blue
-int LEDpins[] = {4, 5, 6, 7}, RGBpins[] = {11, 10, 9};
+int LEDpins[] = {3, 5, 6, 7}, RGBpins[] = {11, 10, 9};
 boolean turnOnTheLights[] = {false, false, false, false};
 int i = 0;
-int temperatureSensorPin = 0;
+int temperatureSensorPin = 0, photoresistorPin = 1;
 int LEDCount = 4;
 
 void setup() {
@@ -44,7 +44,7 @@ void loop() {
       blink = false;
     }
     else if(readSerialString == "blink"){
-      blink = blink ? false : true;
+      blink != blink;
     }
     else if(readSerialString == "reset"){
       turnLEDsOff();
@@ -115,6 +115,27 @@ void loop() {
       Serial.print("The current temperature is ");
       Serial.print(temp);
       Serial.println(" fahrenheit.");    
+    }
+    else if(readSerialString == "dimmauto") {
+      double val = analogRead(photoresistorPin);
+      int per = (val / 1024) * 100;
+      
+      analogWrite(LEDpins[0], 1024 - val);    
+      blink = false;
+      
+      if(per <= 25) {
+        Serial.println("It is pretty dark. The room is brighter now");
+      }
+      else if(per <= 50) {
+        Serial.println("The light is ok, but stil too dark. i will make some adjustments");
+      }
+      else if(per <= 75) {
+        Serial.println("It is pretty bright. I'm dimming the lights.");
+      }
+      else {
+        Serial.println("It is so bright! I'm turning off the lights.");
+        digitalWrite(LEDpins[0], LOW);
+      }
     }
   }
   if(blink){
