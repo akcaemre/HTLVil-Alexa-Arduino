@@ -6,6 +6,8 @@ boolean blink = false;
 int LEDpins[] = {4, 5, 6, 7}, RGBpins[] = {11, 10, 9};
 boolean turnOnTheLights[] = {false, false, false, false};
 int i = 0;
+int tempartureSensorPin = 0; //Muss auf den PIN des Senosrs noch geändert werden
+int LEDCount = 4;
 
 void setup() {
   // put your setup code here, to run once:
@@ -68,11 +70,39 @@ void loop() {
     }
     else if(readSerialString.startsWith("binary")) {
       showBinary(getValue(readSerialString, ':',1).toInt());
-      for(i = 0; i < 4; i++)
-    if(turnOnTheLights[i] == true)
-      digitalWrite(LEDpins[i], HIGH);
-    else
-      digitalWrite(LEDpins[i], LOW);
+      for(i = 0; i < 4; i++){
+        if(turnOnTheLights[i] == true)
+          digitalWrite(LEDpins[i], HIGH);
+        else
+          digitalWrite(LEDpins[i], LOW);
+      }
+    }
+    else if(readSerialString.startsWith("LEDON")) {
+      int ledOnNum = getValue(readSerialString,':', 1).toInt() - 1;
+      
+      if(ledOnNum >= 0 && ledOnNum < LEDCount) {
+        for(i = 0; i < LEDCount; i++) {
+          turnOnTheLights[i] = false;
+        }
+        
+        turnOnTheLights[ledOnNum] = true;
+        
+        for(i = 0; i < LEDCount; i++) {
+          if(turnOnTheLights[i] == true)
+            digitalWrite(LEDpins[i], HIGH);
+          else
+            digitalWrite(LEDpins[i], LOW);
+        }
+        
+      Serial.println("LED " + (ledOnNum + 1) + " turned ON");
+      } else {
+        Serial.println("LED could not be turned on.");
+      }
+    }
+    else if(readSerialString == "measureTemperature"){
+        int val;                
+        val=analogRead();      
+        Serial.println("Temperatur:"+val);    
     }
   }
   if(blink){
@@ -96,11 +126,11 @@ String getValue(String data, char separator, int index) {
  int maxIndex = data.length()-1;
   
   for (int i = 0; i <= maxIndex && found <= index; i++) {
-   if(data.charAt(i)==separator || i == maxIndex) {
-    found++;
-   strIndex[0] = strIndex[1]+1;
-  strIndex[1] = (i == maxIndex) ? i+1 : i; 
-  }
+    if(data.charAt(i)==separator || i == maxIndex) {
+      found++;
+      strIndex[0] = strIndex[1]+1;
+      strIndex[1] = (i == maxIndex) ? i+1 : i; 
+    }
   }
   
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
@@ -121,6 +151,4 @@ void showBinary (int n) {
     n /= 2;
     i++;
   }
-  
-  Serial.println("");
 }
