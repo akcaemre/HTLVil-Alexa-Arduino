@@ -3,7 +3,7 @@ import serial
 from flask import Flask
 from flask_ask import Ask, statement, question
 
-myArduino = serial.Serial('/dev/ttyUSB0', 9600)
+myArduino = serial.Serial("/dev/ttyUSB0", 9600)
 app = Flask(__name__)
 ask = Ask(app, "/")
 
@@ -44,6 +44,11 @@ def led_blink():
 def led_binary(prime):
 	myArduino.write(bytes('binary:'+str(prime), 'UTF-8'))
 	return statement("I am showing the number " + str(prime) + " in binary")
+
+@ask.intent("RGBChangeColorIntent")
+def rgb_color(color):
+	myArduino.write(bytes(color, 'UTF-8'))
+	return statement("I am showing the color {}".format(bytes(color, 'UTF-8')))
 
 if __name__ == '__main__':
 	app.run(debug=True)
