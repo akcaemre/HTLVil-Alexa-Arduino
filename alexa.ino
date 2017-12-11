@@ -1,3 +1,5 @@
+#include <math.h>
+
 String readSerialString;
 byte dimmbrightness = 80;
 boolean blink = false;
@@ -6,25 +8,26 @@ boolean blink = false;
 int LEDpins[] = {4, 5, 6, 7}, RGBpins[] = {11, 10, 9};
 boolean turnOnTheLights[] = {false, false, false, false};
 int i = 0;
-int tempartureSensorPin = 0; //Muss auf den PIN des Senosrs noch geändert werden
+int temperatureSensorPin = 0;
 int LEDCount = 4;
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
+  
+  // Initialize pins
   for (i = 0; i < 4; i++)
     pinMode(LEDpins[i], OUTPUT);
-  
+
   for (i = 0; i < 3; i++)
     pinMode(RGBpins[i], OUTPUT);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   if (Serial.available() > 0) {
-    // read the incoming byte:
+    // Read the incoming String:
     readSerialString = Serial.readString();
-    
+
+    // Handle the readSerialString
     if(readSerialString == "turnLedOn"){
       digitalWrite(LEDpins[0], HIGH);
       Serial.println("LEDturnedOn");
@@ -44,13 +47,10 @@ void loop() {
       blink = blink ? false : true;
     }
     else if(readSerialString == "reset"){
-      int i = 0;
-      for(i=0;i<(sizeof(LEDpins)/sizeof(int));i++){
-        digitalWrite(LEDpins[i], LOW);
-        Serial.println("RESETED");
-      }
+      turnLEDsOff();
       setColor(0, 0, 0);
       
+      Serial.println("RESETED");
     }
     else if(readSerialString == "red"){
       setColor(255, 0, 0);
@@ -70,39 +70,51 @@ void loop() {
     }
     else if(readSerialString.startsWith("binary")) {
       showBinary(getValue(readSerialString, ':',1).toInt());
-      for(i = 0; i < 4; i++){
-        if(turnOnTheLights[i] == true)
-          digitalWrite(LEDpins[i], HIGH);
-        else
-          digitalWrite(LEDpins[i], LOW);
-      }
     }
     else if(readSerialString.startsWith("LEDON")) {
       int ledOnNum = getValue(readSerialString,':', 1).toInt() - 1;
-      
+
       if(ledOnNum >= 0 && ledOnNum < LEDCount) {
-        for(i = 0; i < LEDCount; i++) {
-          turnOnTheLights[i] = false;
-        }
+        turnLEDsFalse();
         
         turnOnTheLights[ledOnNum] = true;
         
-        for(i = 0; i < LEDCount; i++) {
-          if(turnOnTheLights[i] == true)
-            digitalWrite(LEDpins[i], HIGH);
-          else
-            digitalWrite(LEDpins[i], LOW);
-        }
+        turnRightLEDsOn();
         
-      Serial.println("LED " + (ledOnNum + 1) + " turned ON");
-      } else {
-        Serial.println("LED could not be turned on.");
-      }
+        Serial.print("LED ");
+        Serial.print(ledOnNum+1);
+        Serial.println(" turned ON");
+      } 
     }
-    else if(readSerialString == "measureTemperature"){
-        int val;                
-        val=analogRead();      
-        Serial.println("Temperatur:"+val);    
+    else if(readSerialString == "measureTemperatureCelsius"){
+      int val = analogRead(temperatureSensorPin);   
+    
+      // Tutorial from computers.tutsplus.com --> "How to Read Temperatures With Arduino"
+      double temp = log(((10240000/val) - 10000));
+      // Kelvin
+      temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * temp * temp)) * temp);
+      // Celsius
+      temp = temp - 273.15;   
+      
+      Serial.print("The current temperature is ");
+      Serial.print(temp);
+      Serial.println(" celsius degrees.");    
+    }
+    else if(readSerialString == "measureTemperatureFahrenheit"){
+      int val = analogRead(temperatureSensorPin);   
+    
+      // Tutorial from computers.tutsplus.com --> "How to Read Temperatures With Arduino"
+      double temp = log(((10240000/val) - 10000));
+      // Kelvin
+      temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * temp * temp)) * temp);
+      // Celsius
+      temp = temp - 273.15;    
+      // Fahrenheit
+      temp = (temp * 9) / 5 + 32;
+      
+      Serial.print("The current temperature is ");
+      Serial.print(temp);
+      Serial.println(" fahrenheit.");    
     }
   }
   if(blink){
@@ -113,6 +125,22 @@ void loop() {
   }
 }
 
+void turnLEDsOff() {
+      turnLEDsFalse();
+      turnRightLEDsOn();
+}
+void turnLEDsFalse() {
+  for(i = 0; i < LEDCount; i++)
+    turnOnTheLights[i] = false;
+}
+void turnRightLEDsOn() {
+  for(i = 0; i < LEDCount; i++)
+    if(turnOnTheLights[i] == true)
+      digitalWrite(LEDpins[i], HIGH);
+    else
+      digitalWrite(LEDpins[i], LOW);
+}
+
 void setColor(int red, int green, int blue)
 {
   analogWrite(RGBpins[0], red);
@@ -121,10 +149,11 @@ void setColor(int red, int green, int blue)
 }
 
 String getValue(String data, char separator, int index) {
- int found = 0;
- int strIndex[] = {0, -1};
- int maxIndex = data.length()-1;
-  
+  int found = 0;
+  int strIndex[] = {
+    0, -1  };
+  int maxIndex = data.length()-1;
+
   for (int i = 0; i <= maxIndex && found <= index; i++) {
     if(data.charAt(i)==separator || i == maxIndex) {
       found++;
@@ -132,23 +161,24 @@ String getValue(String data, char separator, int index) {
       strIndex[1] = (i == maxIndex) ? i+1 : i; 
     }
   }
-  
+
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 void showBinary (int n) {
   int remainder;
-  
-  for(i = 0; i < 4; i++)
-     turnOnTheLights[i] = false;
-  
+  turnLEDsFalse();
+
   i = 0;
   while(n!=0) {
     remainder = n%2;
-    
+
     Serial.print(remainder);
     if(remainder == 1) turnOnTheLights[i] = true;
-    
+
     n /= 2;
     i++;
   }
+  
+  turnRightLEDsOn();
 }
+
