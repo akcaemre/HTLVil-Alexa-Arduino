@@ -1,0 +1,12 @@
+Fehler bei:
+
+Dimmen von einzellnen LEDs
+ - dimmen geht nicht wirklich, überprüfen
+
+Binärzahlen
+ - verpfuscht, neu machen
+
+LED Welle
+ - threads einbauen
+
+
