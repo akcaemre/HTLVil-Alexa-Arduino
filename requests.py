@@ -14,6 +14,11 @@ log.addHandler(logging.StreamHandler())
 log.setLevel(logging.DEBUG)
 logging.getLogger("flask_ask").setLevel(logging.DEBUG)
 
+# ------ Info ------
+# Tkinter GUI wird nicht funktionieren, da mainloop den Thread "freezed"
+# Tkinter GUI am besten mit einer Java pipe ersetzen 
+# ------ Ende ------
+
 # PROTOCOL GUI VARIABLES
 alexaScreen = Tk() # Fenster erstellen
 alexaScreen.wm_title("Raspberry Pi GUI") # Fenster Titel
@@ -21,7 +26,7 @@ alexaScreen.config(background = "#FEFEFE") # Hintergrundfarbe des Fensters
 lab = Label(alexaScreen)
 lab.pack()
 
-javaPipe = subprocess.Popen(["java", "data.main"], stdin=subprocess.PIPE)	# opens java application
+javaPipe = subprocess.Popen(["java", "data.Main"], stdin=subprocess.PIPE)	# opens java application
 
 # displays what alexa said on the protocol screen
 def alexaSaid(sentence):
@@ -40,30 +45,34 @@ alexaScreen.mainloop() # GUI wird upgedated. Danach keine Elemente setzen
 # this function checks which led number equals which room
 def checkLedNbr(ledNbr):
 	location = "error"
-	if ledNbr == 0
+
+	if ledNbr == 0:
 		location = "in der Küche"
-	else if ledNbr == 1
+	elif ledNbr == 1:
 		location = "in der Garage"
-	else if ledNbr == 2
+	elif ledNbr == 2:
 		location = "im Badezimmer"
-	else if ledNbr == 3
+	elif ledNbr == 3:
 		location = "im Wohnzimmer"
-	else if ledNbr == 4
+	elif ledNbr == 4:
 		location = "im Schlafzimmer"
+
 	return location
 
 def getRoomName(ledNbr):
 	location = "error"
-	if ledNbr == 0
+
+	if ledNbr == 0:
 		location = "Küche"
-	else if ledNbr == 1
+	elif ledNbr == 1:
 		location = "Garage"
-	else if ledNbr == 2
+	elif ledNbr == 2:
 		location = "Bad"
-	else if ledNbr == 3
+	elif ledNbr == 3:
 		location = "Wohnzimmer"
-	else if ledNbr == 4
+	elif ledNbr == 4:
 		location = "Schlafzimmer"
+
 	return location
 
 @ask.launch
@@ -75,15 +84,17 @@ def say_hello(firstname):
 	return statement("Hello {}. Nice to meet you.".format(firstname))
 
 
-
 @ask.intent("AllLEDsOn_Intent")
 def allLeds_on():
 	myArduino.write(bytes("allLeds_on", "UTF-8"))
 	myArduino.flush()
 	myArduino.readline()
+
 	antwort = "Alle Lichter wurden eingeschaltet."
+
 	alexaSaid(antwort)
-	javaPipe.stdin.write("TurnOnAll\r\n")
+	javaPipe.stdin.write(bytes("TurnOnAll\r\n", "UTF-8"))
+
 	return statement(antwort)
 
 @ask.intent("AllLEDsOff_Intent")
@@ -91,9 +102,12 @@ def allLeds_off():
 	myArduino.write(bytes("allLeds_off", "UTF-8"))
 	myArduino.flush()
 	myArduino.readline()
+
 	antwort = "Alle Lichter wurden ausgeschaltet."
+
 	alexaSaid(antwort)
-	javaPipe.stdin.write("TurnOffAll\r\n")
+	javaPipe.stdin.write(bytes("TurnOffAll\r\n", "UTF-8"))
+
 	return statement(antwort)
 
 @ask.intent("AutoLEDDimm_Intent")
@@ -116,15 +130,17 @@ def led_dimm(ledNbr):
 	alexaSaid(antwort)
 	return statement(antwort)
 
-@ask.intent("TurnLedXOn_Intent")
+@ask.intent("TurnLEDXOn_Intent")
 def led_x_on(ledNbr):
 	myArduino.write(bytes("LEDON:" + str(ledNbr), "UTF-8"))
 	myArduino.flush()
 	myArduino.readline()
 
 	antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " eingeschaltet."
+
 	alexaSaid(antwort)
-	javaPipe.stdin.write("TurnOn" + getRoomName(ledNbr) + "\r\n")
+	javaPipe.stdin.write(bytes("TurnOn" + getRoomName(ledNbr) + "\r\n", "UTF-8"))
+
 	return statement(antwort)
 
 @ask.intent("TurnLEDXOff_Intent") 
@@ -134,8 +150,10 @@ def led_x_off(ledNbr):
 	myArduino.readline()
 
 	antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " ausgeschaltet."
+
 	alexaSaid(antwort)
-	javaPipe.stdin.write("TurnOff" + getRoomName(ledNbr) + "\r\n")
+	javaPipe.stdin.write(bytes("TurnOff" + getRoomName(ledNbr) + "\r\n", "UTF-8"))
+
 	return statement(antwort)
 
 @ask.intent("RGB_LEDSetColor_Intent")
