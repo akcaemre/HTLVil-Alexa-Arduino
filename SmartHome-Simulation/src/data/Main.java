@@ -52,11 +52,11 @@ public class Main extends JFrame {
 	public static void main(String[] args) {
 			try {
 				// -- Initialize phase --
-				rooms.add(new Room("Wohnzimmer", false));
-				rooms.add(new Room("Küche", false));
-				rooms.add(new Room("Schlafzimmer", false));
-				rooms.add(new Room("Bad", false));
-				rooms.add(new Room("Garage", false));
+				rooms.add(new Room("wohnzimmer", false));
+				rooms.add(new Room("küche", false));
+				rooms.add(new Room("schlafzimmer", false));
+				rooms.add(new Room("bad", false));
+				rooms.add(new Room("garage", false));
 
 				urlImageBackground = new URL(backgroundURL);
 				urlImageBathroom = new URL(bathroomURL);
@@ -97,7 +97,7 @@ public class Main extends JFrame {
 						String[] splitted = s.split(SEPERATOR);
 						
 						if(splitted.length > 1) {
-							Room r = findRoomByName(splitted[1]);
+							Room r = findRoomByName(splitted[1].toLowerCase());
 							
 							if(r != null)
 								r.setIsOn(true);
@@ -106,7 +106,7 @@ public class Main extends JFrame {
 						String[] splitted = s.split(SEPERATOR);
 						
 						if(splitted.length > 1) {
-							Room r = findRoomByName(splitted[1]);
+							Room r = findRoomByName(splitted[1].toLowerCase());
 							
 							if(r != null)
 								r.setIsOn(false);
@@ -133,11 +133,11 @@ public class Main extends JFrame {
 
 	    g.drawImage(backgroundImage, 0, 0, null);
 	    
-	    if(findRoomByName("Bad").isOn()) g.drawImage(bathroomImage, 45, 155, null);
-	    if(findRoomByName("Schlafzimmer").isOn()) g.drawImage(bedroomImage, 325, 155, null);
-	    if(findRoomByName("Garage").isOn()) g.drawImage(garageImage, 700, 330, null);
-	    if(findRoomByName("Küche").isOn()) g.drawImage(kitchenImage, 415, 330, null);
-	    if(findRoomByName("Wohnzimmer").isOn()) g.drawImage(livingroomImage, 45, 330, null);
+	    if(findRoomByName("bad").isOn()) g.drawImage(bathroomImage, 45, 155, null);
+	    if(findRoomByName("schlafzimmer").isOn()) g.drawImage(bedroomImage, 325, 155, null);
+	    if(findRoomByName("garage").isOn()) g.drawImage(garageImage, 700, 330, null);
+	    if(findRoomByName("küche").isOn()) g.drawImage(kitchenImage, 415, 330, null);
+	    if(findRoomByName("wohnzimmer").isOn()) g.drawImage(livingroomImage, 45, 330, null);
 	    
 	    g.dispose();
 	    
