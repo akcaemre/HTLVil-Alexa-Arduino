@@ -5,232 +5,196 @@ from flask_ask import Ask, statement, question
 from tkinter import *
 import subprocess
 
+# Initializing Arduino on USB0
 myArduino = serial.Serial("/dev/ttyUSB0", 9600, timeout=10)
+
+# Initializing App for Alexa
 app = Flask(__name__)
 ask = Ask(app, "/")
 
+# Setting logger
 log = logging.getLogger()
 log.addHandler(logging.StreamHandler())
 log.setLevel(logging.DEBUG)
 logging.getLogger("flask_ask").setLevel(logging.DEBUG)
 
-# ------ Info ------
-# Tkinter GUI wird nicht funktionieren, da mainloop den Thread "freezed"
-# Tkinter GUI am besten mit einer Java pipe ersetzen 
-# ------ Ende ------
-
-# PROTOCOL GUI VARIABLES
-alexaScreen = Tk() # Fenster erstellen
-alexaScreen.wm_title("Raspberry Pi GUI") # Fenster Titel
-alexaScreen.config(background = "#FEFEFE") # Hintergrundfarbe des Fensters
-lab = Label(alexaScreen)
-lab.pack()
-
-javaPipe = subprocess.Popen(["java", "data.Main"], stdin=subprocess.PIPE)	# opens java application
-
-# displays what alexa said on the protocol screen
-def alexaSaid(sentence):
-    lab.set("Alexa:\t" + sentence)
-    alexaScreen.update_idletasks()
-    return
-# displays what the user said on the protocol screen
-def userSaid(sentence):
-    lab.set("User:\t" + sentence)
-    alexaScreen.update_idletasks()
-    return
-
-alexaScreen.mainloop() # GUI wird upgedated. Danach keine Elemente setzen
-
+# Opening needed Java Applications
+javaProtocolPipe = subprocess.Popen(["java", "data.ProtocolMonitorMain"], stdin=subprocess.PIPE)
 
 # this function checks which led number equals which room
 def checkLedNbr(ledNbr):
-	location = "error"
+    to_return = ""
 
-	if ledNbr == 0:
-		location = "in der Küche"
-	elif ledNbr == 1:
-		location = "in der Garage"
-	elif ledNbr == 2:
-		location = "im Badezimmer"
-	elif ledNbr == 3:
-		location = "im Wohnzimmer"
-	elif ledNbr == 4:
-		location = "im Schlafzimmer"
+    if ledNbr == 1:
+        to_return = "im Wohnzimmer"
+    elif ledNbr == 2:
+        to_return = "in der Küche"
+    elif ledNbr == 3:
+        to_return = "im Bad"
+    elif ledNbr == 4:
+        to_return = "im Schlafzimmer"
+    elif ledNbr == 5:
+        to_return = "in der Garage"
 
-	return location
+    return to_return
 
-def getRoomName(ledNbr):
-	location = "error"
+def SendTextViaProtocolPipe(userText, alexaText):
+    javaProtocolPipe.stdin.write(bytes("{};{}".format(userText, alexaText), "UTF-8"))
+    javaProtocolPipe.stdin.flush()
+    return
 
-	if ledNbr == 0:
-		location = "Küche"
-	elif ledNbr == 1:
-		location = "Garage"
-	elif ledNbr == 2:
-		location = "Bad"
-	elif ledNbr == 3:
-		location = "Wohnzimmer"
-	elif ledNbr == 4:
-		location = "Schlafzimmer"
+def WriteSerialLineToArduino(text):
+    myArduino.write(bytes(text, "UTF-8"))
+    myArduino.flush()
+    myArduino.readline()
 
-	return location
+    return
 
 @ask.launch
 def launch():
-	return statement("Welcome to the arduino control.")
+    antwort = "Willkommen zu dem Arduino kontrollierten SmartHome der HTL Villach."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("SayHello_Intent")
 def say_hello(firstname):
-	return statement("Hello {}. Nice to meet you.".format(firstname))
+    antwort = "Hallo {}. Freut mich dich kennen zu lernen.".format(firstname)
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 
 @ask.intent("AllLEDsOn_Intent")
 def allLeds_on():
-	myArduino.write(bytes("allLeds_on", "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("allLeds_on")
 
-	antwort = "Alle Lichter wurden eingeschaltet."
+    antwort = "Alle Lichter wurden eingeschaltet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
 
-	alexaSaid(antwort)
-	javaPipe.stdin.write(bytes("TurnOnAll\r\n", "UTF-8"))
-
-	return statement(antwort)
+    return statement(antwort)
 
 @ask.intent("AllLEDsOff_Intent")
 def allLeds_off():
-	myArduino.write(bytes("allLeds_off", "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("allLeds_off")
 
-	antwort = "Alle Lichter wurden ausgeschaltet."
+    antwort = "Alle Lichter wurden ausgeschaltet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
 
-	alexaSaid(antwort)
-	javaPipe.stdin.write(bytes("TurnOffAll\r\n", "UTF-8"))
-
-	return statement(antwort)
+    return statement(antwort)
 
 @ask.intent("AutoLEDDimm_Intent")
 def autoLedDimm(ledNbr):
-	myArduino.write(bytes("autoLedDimm:"+str(ledNbr), "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("autoLedDimm:" + str(ledNbr))
 
-	antwort = "Ich habe das licht " + checkLedNbr(ledNbr) + " automatisch gedimmt."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Ich habe das licht {} automatisch gedimmt.".format(checkLedNbr(ledNbr))
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement("antwort")
 
 @ask.intent("LEDDimm_Intent")
 def led_dimm(ledNbr):
-	myArduino.write(bytes("led_dimm:"+str(ledNbr), "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("led_dimm:" + str(ledNbr))
 
-	antwort = "Ich habe das licht " + checkLedNbr(ledNbr) + " entsprechend der Helligkeit gedimmt."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Ich habe das licht " + checkLedNbr(ledNbr) + " entsprechend der Helligkeit gedimmt."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("TurnLEDXOn_Intent")
 def led_x_on(ledNbr):
-	myArduino.write(bytes("LEDON:" + str(ledNbr), "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("LEDON:" + str(ledNbr))
 
-	antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " eingeschaltet."
+    antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " eingeschaltet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
 
-	alexaSaid(antwort)
-	javaPipe.stdin.write(bytes("TurnOn" + getRoomName(ledNbr) + "\r\n", "UTF-8"))
-
-	return statement(antwort)
+    return statement(antwort)
 
 @ask.intent("TurnLEDXOff_Intent") 
 def led_x_off(ledNbr):
-	myArduino.write(bytes("LEDOFF:" + str(ledNbr), "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("LEDOFF:" + str(ledNbr))
 
-	antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " ausgeschaltet."
+    antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " ausgeschaltet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
 
-	alexaSaid(antwort)
-	javaPipe.stdin.write(bytes("TurnOff" + getRoomName(ledNbr) + "\r\n", "UTF-8"))
-
-	return statement(antwort)
+    return statement(antwort)
 
 @ask.intent("RGB_LEDSetColor_Intent")
 def rgb_color(color):
-	myArduino.write(color.encode("UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino(color.encode("UTF-8"))
 
-	antwort = "Wie gewünscht siehst du jetzt die Farbe {}".format(color.encode("UTF-8").decode("UTF-8"))
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Wie gewünscht siehst du jetzt die Farbe {}".format(color.encode("UTF-8").decode("UTF-8"))
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("RGB_LEDOff_Intent")
 def rgb_off():
-	myArduino.write(bytes("rgb_off", "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("rgb_off")
 
-	antwort = "Ich habe die Farb-LED ausgeschaltet."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Ich habe die Farb-LED ausgeschaltet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("ResetAllLEDs_Intent")
 def reset_all_leds():
-	myArduino.write(bytes("reset_all_leds", "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("reset_all_leds")
 
-	antwort = "Ich habe sämtliche Lichter und Lampen ausgeschaltet."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Ich habe sämtliche Lichter und Lampen ausgeschaltet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("ShowInBinary_Intent")
 def led_binary(numberToDisplay):
-	myArduino.write(bytes('binary:'+str(numberToDisplay), 'UTF-8'))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino('binary:' + str(numberToDisplay))
 
-	antwort = "Ich zeige nun die Zahl " + str(prime) + " mittels den LEDs als Binärzahl."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Ich zeige nun die Zahl " + str(numberToDisplay) + " mittels den LEDs als Binärzahl."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("MeasureTemperatureCelsius_Intent")
 def get_temp_cel():
-	myArduino.write(bytes("measureTemperatureCelsius", "UTF-8"))
-	myArduino.flush()
-	s = myArduino.readline()	# arduino tells what alexa has to say
-	alexaSaid(s.decode("UTF-8"))
-	return statement(s.decode("UTF-8"))
+    myArduino.write(bytes("measureTemperatureCelsius", "UTF-8"))
+    myArduino.flush()
+    s = myArduino.readline()	# arduino tells what alexa has to say
+
+    antwort = "Zurzeit hat es {} Grad Celsius".format(s.decode("UTF-8"))
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("MeasureTemperatureFahrenheit_Intent")
 def get_temp_fahr():
-	myArduino.write(bytes("measureTemperatureFahrenheit", "UTF-8"))
-	myArduino.flush()
-	s = myArduino.readline()	# arduino tells what alexa has to say
-	alexaSaid(s.decode("UTF-8"))
-	return statement(s.decode("UTF-8"))
+    myArduino.write(bytes("measureTemperatureFahrenheit", "UTF-8"))
+    myArduino.flush()
+    s = myArduino.readline()	# arduino tells what alexa has to say
+
+    antwort = "Zurzeit hat es {} Fahrenheit".format(s.decode("UTF-8"))
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("LetLEDsWave_Intent")
 def let_leds_wave():
-	myArduino.write(bytes("ledLedsWave", "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("ledLedsWave")
+    myArduino.readline()
 
-	antwort = "Die LEDs zeigen jetzt wie gewünscht eine Welle."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Die LEDs zeigen jetzt wie gewünscht eine Welle."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("TestAllFunctions_Intent")
 def test_all_functions():
-	myArduino.write(bytes("testAllFunctions", "UTF-8"))
-	myArduino.flush()
-	myArduino.readline()
+    WriteSerialLineToArduino("testAllFunctions")
 
-	antwort = "Everything is getting tested."
-	alexaSaid(antwort)
-	return statement(antwort)
+    antwort = "Alle Funktionen werden getestet."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 if __name__ == '__main__':
-	app.run(debug=True)
+    app.run(debug=True)
