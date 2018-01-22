@@ -4,15 +4,20 @@ import subprocess
 from flask import Flask
 from flask_ask import Ask, statement, question
 
+# Initializing App for Alexa
 app = Flask(__name__)
 ask = Ask(app, "/")
 
+# Setting logger
 log = logging.getLogger()
 log.addHandler(logging.StreamHandler())
 log.setLevel(logging.DEBUG)
 logging.getLogger("flask_ask").setLevel(logging.DEBUG)
 
-javaPipe = subprocess.Popen(["java", "data.Main"], stdin=subprocess.PIPE)	# opens java application
+# Opening needed Java Applications
+JAVA_PIPE_HOUSE_SIMULATION = subprocess.Popen(["java", "data.Main"], stdin=subprocess.PIPE)
+javaProtocolPipe = subprocess.Popen(["java", "data.ProtocolMonitorMain"], stdin=subprocess.PIPE)
+
 
 def getCorrectPhrase(Raum):
     to_return = ""
@@ -30,22 +35,36 @@ def getCorrectPhrase(Raum):
 
     return to_return
 
+def SendTextViaProtocolPipe(userText, alexaText):
+    javaProtocolPipe.stdin.write(bytes("{};{}".format(userText, alexaText), "UTF-8"))
+    javaProtocolPipe.stdin.flush()
+    return
+
+def SendTextViaHouseSimulationPipe(text):
+    JAVA_PIPE_HOUSE_SIMULATION.stdin.write(bytes(text, "UTF-8"))
+    JAVA_PIPE_HOUSE_SIMULATION.stdin.flush()
+    return
+
 @ask.launch
 def launch():
-    return statement("Willkommen zu der SmartHome Simulation der HTL Villach.")
+    antwort = "Willkommen zu der SmartHome Simulation der HTL Villach."
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("SayHello_Intent")
 def say_hello(firstname):
-    return statement("Hallo {}. Freut mich dich kennen zu lernen!".format(firstname))
+    antwort = "Hallo {}. Freut mich dich kennen zu lernen!".format(firstname)
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+
+    return statement(antwort)
 
 @ask.intent("AllLEDsOn_Intent")
 def allLeds_on():
     antwort = "Alle Lichter wurden eingeschaltet."
 
-	#userSaid(request)
-    #gui.alexa_said(antwort)
-    javaPipe.stdin.write(bytes("TurnOnAll\n", "UTF-8"))
-    javaPipe.stdin.flush()
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaHouseSimulationPipe("TurnOnAll\n")
 
     return statement(antwort)
 
@@ -53,10 +72,8 @@ def allLeds_on():
 def allLeds_off():
     antwort = "Alle Lichter wurden ausgeschaltet."
 
-	#userSaid(request)
-    #gui.alexa_said(antwort)
-    javaPipe.stdin.write(bytes("TurnOffAll\n", "UTF-8"))
-    javaPipe.stdin.flush()
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaHouseSimulationPipe("TurnOffAll\n")
 
     return statement(antwort)
 
@@ -64,10 +81,8 @@ def allLeds_off():
 def led_x_on(Raum):
     antwort = "Ich habe das Licht {} eingeschaltet.".format(getCorrectPhrase(Raum))
 
-    #userSaid(request)
-    #gui.alexa_said(antwort)
-    javaPipe.stdin.write(bytes("TurnOn:{}\n".format(Raum), "UTF-8"))
-    javaPipe.stdin.flush()
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaHouseSimulationPipe("TurnOn:{}\n".format(Raum))
 
     return statement(antwort)
 
@@ -75,10 +90,8 @@ def led_x_on(Raum):
 def led_x_off(Raum):
     antwort = "Ich habe das Licht {} ausgeschaltet.".format(getCorrectPhrase(Raum))
 
-	#userSaid(request)
-    #gui.alexa_said(antwort)
-    javaPipe.stdin.write(bytes("TurnOff:{}\n".format(Raum), "UTF-8"))
-    javaPipe.stdin.flush()
+    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaHouseSimulationPipe("TurnOff:{}\n".format(Raum))
 
     return statement(antwort)
 
