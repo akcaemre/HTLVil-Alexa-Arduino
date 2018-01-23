@@ -36,7 +36,7 @@ def getCorrectPhrase(Raum):
     return to_return
 
 def SendTextViaProtocolPipe(userText, alexaText):
-    javaProtocolPipe.stdin.write(bytes("{};{}".format(userText, alexaText), "UTF-8"))
+    javaProtocolPipe.stdin.write(bytes("{};{}\n".format(userText, alexaText), "UTF-8"))
     javaProtocolPipe.stdin.flush()
     return
 
