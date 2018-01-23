@@ -20,7 +20,7 @@ public class ProtocolMonitorMain extends JFrame{
 	
 	public static void main(String[] args) {
 		header = new JLabel("Protokoll der Sprachein- und Sprachausgaben");
-		mainOutput = new JTextArea(getTimeStamp() + "Started.");
+		mainOutput = new JTextArea("\n" + getTimeStamp() + "Started.");
 		mainOutput.setEditable(false);
 		
 		// initializes this frame
@@ -47,10 +47,9 @@ public class ProtocolMonitorMain extends JFrame{
 					String userText = splitted[0];
 					String alexaText = splitted[1];
 					
-					String output = mainOutput.getText() 
-									+ "\n" + getTimeStamp() + userText 
+					String output = "\n" + getTimeStamp() + userText 
 									+ "\n" + getTimeStamp() + alexaText 
-									+ "\n";
+									+ "\n\n" + mainOutput.getText() ;
 					
 					mainOutput.setText(output);
 					
