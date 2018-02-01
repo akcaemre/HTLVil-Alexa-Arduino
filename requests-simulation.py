@@ -48,7 +48,7 @@ def SendTextViaHouseSimulationPipe(text):
 @ask.launch
 def launch():
     antwort = "Willkommen zu der SmartHome Simulation der HTL Villach."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Starte Lichtsteuerung", "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
@@ -63,7 +63,7 @@ def say_hello(firstname):
 def allLeds_on():
     antwort = "Alle Lichter wurden eingeschaltet."
 
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Alle Lichter einschalten", "Alexa: {}".format(antwort))
     SendTextViaHouseSimulationPipe("TurnOnAll\n")
 
     return statement(antwort)
@@ -72,7 +72,7 @@ def allLeds_on():
 def allLeds_off():
     antwort = "Alle Lichter wurden ausgeschaltet."
 
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Alle Lichter ausschalten", "Alexa: {}".format(antwort))
     SendTextViaHouseSimulationPipe("TurnOffAll\n")
 
     return statement(antwort)
@@ -81,7 +81,7 @@ def allLeds_off():
 def led_x_on(Raum):
     antwort = "Ich habe das Licht {} eingeschaltet.".format(getCorrectPhrase(Raum))
 
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Das Licht {} einschalten".format(getCorrectPhrase(Raum)), "Alexa: {}".format(antwort))
     SendTextViaHouseSimulationPipe("TurnOn:{}\n".format(Raum))
 
     return statement(antwort)
@@ -90,7 +90,7 @@ def led_x_on(Raum):
 def led_x_off(Raum):
     antwort = "Ich habe das Licht {} ausgeschaltet.".format(getCorrectPhrase(Raum))
 
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Schalte das Licht {} aus".format(getCorrectPhrase(Raum)), "Alexa: {}".format(antwort))
     SendTextViaHouseSimulationPipe("TurnOff:{}\n".format(Raum))
 
     return statement(antwort)

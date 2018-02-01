@@ -22,24 +22,37 @@ logging.getLogger("flask_ask").setLevel(logging.DEBUG)
 javaProtocolPipe = subprocess.Popen(["java", "data.ProtocolMonitorMain"], stdin=subprocess.PIPE)
 
 # this function checks which led number equals which room
-def checkLedNbr(ledNbr):
+def getRoomNumber(Raum):
     to_return = ""
 
-    if ledNbr == 1:
+    if Raum == "wohnzimmer":
+        to_return = "1"
+    elif Raum == "küche":
+        to_return = "2"
+    elif Raum == "bad":
+        to_return = "3"
+    elif Raum == "schlafzimmer":
+        to_return = "4"
+
+    return to_return
+
+def getRoomName(Raum):
+    to_return = ""
+
+    if Raum == "wohnzimmer":
         to_return = "im Wohnzimmer"
-    elif ledNbr == 2:
+    elif Raum == "küche":
         to_return = "in der Küche"
-    elif ledNbr == 3:
+    elif Raum == "bad":
         to_return = "im Bad"
-    elif ledNbr == 4:
+    elif Raum == "schlafzimmer":
         to_return = "im Schlafzimmer"
-    elif ledNbr == 5:
-        to_return = "in der Garage"
+
 
     return to_return
 
 def SendTextViaProtocolPipe(userText, alexaText):
-    javaProtocolPipe.stdin.write(bytes("{};{}".format(userText, alexaText), "UTF-8"))
+    javaProtocolPipe.stdin.write(bytes("{};{}\n".format(userText, alexaText), "UTF-8"))
     javaProtocolPipe.stdin.flush()
     return
 
@@ -53,7 +66,7 @@ def WriteSerialLineToArduino(text):
 @ask.launch
 def launch():
     antwort = "Willkommen zu dem Arduino kontrollierten SmartHome der HTL Villach."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Starte Lichtsteuerung", "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
@@ -70,7 +83,7 @@ def allLeds_on():
     WriteSerialLineToArduino("allLeds_on")
 
     antwort = "Alle Lichter wurden eingeschaltet."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Schalte alle Lichter ein", "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
@@ -79,7 +92,7 @@ def allLeds_off():
     WriteSerialLineToArduino("allLeds_off")
 
     antwort = "Alle Lichter wurden ausgeschaltet."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Alle Lichter ausschalten", "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
@@ -88,7 +101,7 @@ def autoLedDimm(ledNbr):
     WriteSerialLineToArduino("autoLedDimm:" + str(ledNbr))
 
     antwort = "Ich habe das licht {} automatisch gedimmt.".format(checkLedNbr(ledNbr))
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Dimme {} automatisch".format(ledNbr), "Alexa: {}".format(antwort))
 
     return statement("antwort")
 
@@ -102,20 +115,20 @@ def led_dimm(ledNbr):
     return statement(antwort)
 
 @ask.intent("TurnLEDXOn_Intent")
-def led_x_on(ledNbr):
-    WriteSerialLineToArduino("LEDON:" + str(ledNbr))
+def led_x_on(Raum):
+    WriteSerialLineToArduino("LEDON:" + getRoomNumber(Raum))
 
-    antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " eingeschaltet."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    antwort = "Ich habe das Licht " + getRoomName(Raum) + " eingeschaltet."
+    SendTextViaProtocolPipe("Benutzer: Das Licht {} einschalten".format(getRoomName(Raum)), "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
 @ask.intent("TurnLEDXOff_Intent") 
-def led_x_off(ledNbr):
-    WriteSerialLineToArduino("LEDOFF:" + str(ledNbr))
+def led_x_off(Raum):
+    WriteSerialLineToArduino("LEDOFF:" + getRoomNumber(Raum))
 
-    antwort = "Ich habe das Licht " + checkLedNbr(ledNbr) + " ausgeschaltet."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    antwort = "Ich habe das Licht " + getRoomName(Raum) + " ausgeschaltet."
+    SendTextViaProtocolPipe("Benutzer: Schalte das Licht {} aus".format(getRoomName(Raum)), "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
@@ -151,7 +164,7 @@ def led_binary(numberToDisplay):
     WriteSerialLineToArduino('binary:' + str(numberToDisplay))
 
     antwort = "Ich zeige nun die Zahl " + str(numberToDisplay) + " mittels den LEDs als Binärzahl."
-    SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
+    SendTextViaProtocolPipe("Benutzer: Zeige die Zahl {} in binär".format(str(numberToDisplay)), "Alexa: {}".format(antwort))
 
     return statement(antwort)
 
@@ -161,7 +174,7 @@ def get_temp_cel():
     myArduino.flush()
     s = myArduino.readline()	# arduino tells what alexa has to say
 
-    antwort = "Zurzeit hat es {} Grad Celsius".format(s.decode("UTF-8"))
+    antwort = "{}".format(s.decode("UTF-8"))
     SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
 
     return statement(antwort)
@@ -172,7 +185,7 @@ def get_temp_fahr():
     myArduino.flush()
     s = myArduino.readline()	# arduino tells what alexa has to say
 
-    antwort = "Zurzeit hat es {} Fahrenheit".format(s.decode("UTF-8"))
+    antwort = "{}".format(s.decode("UTF-8"))
     SendTextViaProtocolPipe("Benutzer: ...", "Alexa: {}".format(antwort))
 
     return statement(antwort)
