@@ -1,5 +1,6 @@
 # HTLVil-Alexa-Arduino
 
+-- Installation --
 sudo apt-get update
 
 sudo apt-get upgrade -y
@@ -11,4 +12,5 @@ libjpeg8-dev zlib1g-dev libssl-dev
 
 sudo pip3 install Flask flask-ask
 
+-- Start --
 python3 requests-simulation.py
